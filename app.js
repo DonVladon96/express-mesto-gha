@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const router = require('./routes/index');
 
 const app = express();
-const PORT = 3006;
+const PORT = 3000;
 
 app.use((req, res, next) => {
   req.user = {
