@@ -2,7 +2,6 @@ const express = require('express');
 
 const router = express.Router();
 
-
 // REST
 
 // GET
@@ -13,12 +12,15 @@ const router = express.Router();
 
 // CRUD
 
-const {getUsers, getUserById, createUser} = require('../controllers/users')
+const {
+  getUsers, getUserById, createUser, updateProfile, updateAvatar,
+} = require('../controllers/users');
 
 router.get('/users', getUsers);
 router.get('/users/:id', getUserById);
 router.post('/users', createUser);
-
+router.patch('/users/me', updateProfile);
+router.patch('/users/me/avatar', updateAvatar);
 
 // router.get('/users', (req, res) => {
 //   res.send('All users');
@@ -31,7 +33,6 @@ router.post('/users', createUser);
 // router.get('/users/:userId', (req, res) => {
 //   res.send('One user');
 // });
-
 
 // router.delete('/users/:userId', (req, res) => {
 //   res.send('Deleted');
