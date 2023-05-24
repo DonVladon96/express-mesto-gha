@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
-const bodyParser = require('body-parser');
 const router = require('./routes/index');
 
 const app = express();
@@ -19,7 +18,6 @@ app.use((req, res, next) => {
 app.use(helmet());
 app.use(express.json());
 app.use(router);
-app.use(bodyParser.json());
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb').then(() => {
   console.log('Connected to database.');
