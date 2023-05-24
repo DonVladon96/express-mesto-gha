@@ -10,6 +10,7 @@ module.exports.getUsers = (req, res) => {
     });
 };
 
+
 module.exports.getUserById = (req, res) => {
   // const { _id } = req.user
 
@@ -29,6 +30,7 @@ module.exports.getUserById = (req, res) => {
   //   });
   console.log(req.user)
 };
+
 
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
