@@ -1,11 +1,20 @@
+const { Error } = require('mongoose');
+const http2 = require('http2');
 const Card = require('../models/card');
+
+const {
+  HTTP_STATUS_CREATED,
+  HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR,
+} = http2.constants;
 
 module.exports.getCard = (req, res) => {
   Card.find({})
     .then((cards) => {
       res.send(cards);
     })
-    .catch(() => res.status(500).send({ message: 'Server Error' }));
+    .catch(() => res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' }));
 };
 
 module.exports.createCard = (req, res) => {
@@ -13,13 +22,13 @@ module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   Card.create({ name, link, owner })
-    .then((card) => res.status(201).send(card))
+    .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
-      if (err) {
-        res.status(400).send({ message: 'Error data for created card.' });
+      if (err instanceof Error.ValidationError) {
+        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Error data for created card.' });
         return;
       }
-      res.status(500).send({ message: 'Server error.' });
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server error.' });
     });
 };
 
@@ -28,17 +37,17 @@ module.exports.cardDelete = (req, res) => {
     .orFail(new Error('cardNotFound'))
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err) {
-        res.status(404).send({ message: 'Card id is not a found.' });
+      if (err instanceof Error.DocumentNotFoundError) {
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card id is not a found.' });
         return;
       }
 
-      if (err) {
-        res.status(400).send({ message: 'Переданы некорректные данные для удаления карточки.' });
+      if (err instanceof Error.CastError) {
+        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные для удаления карточки.' });
         return;
       }
 
-      res.status(500).send({ message: 'Server error' });
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server error' });
     });
 };
 
@@ -50,17 +59,17 @@ module.exports.likeCard = (req, res) => {
   )
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err) {
-        res.status(404).send({ message: 'Card id is not a found.' });
+      if (err instanceof Error.DocumentNotFoundError) {
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card id is not a found.' });
         return;
       }
 
-      if (err) {
-        res.status(400).send({ message: 'Card id is not a found.' });
+      if (err instanceof Error.CastError) {
+        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Card id is not a found.' });
         return;
       }
 
-      res.status(500).send({ message: 'Server errorr.' });
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server errorr.' });
     });
 };
 
@@ -72,16 +81,16 @@ module.exports.dislikeCard = (req, res) => {
   )
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err) {
-        res.status(404).send({ message: 'Card id is not a found.' });
+      if (err instanceof Error.DocumentNotFoundError) {
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card id is not a found.' });
         return;
       }
 
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Card dislike data error.' });
+      if (err instanceof Error.CastError) {
+        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Card dislike data error.' });
         return;
       }
 
-      res.status(500).send({ message: 'Server error.' });
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server error.' });
     });
 };
