@@ -28,12 +28,7 @@ module.exports.getUserById = (req, res) => {
   User.findById(_id)
     .orFail()
     // eslint-disable-next-line consistent-return
-    .then((user) => {
-      if (!user) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User is not found' });
-      }
-      res.send(user);
-    })
+    .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
       console.log(err);
       if (err instanceof Error.CastError) {
@@ -52,7 +47,6 @@ module.exports.getUserById = (req, res) => {
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
   console.log(req.body);
-  console.log(req.praktikum);
   User.create({ name, about, avatar })
     .orFail()
     .then((user) => res.status(HTTP_STATUS_CREATED).send(user))

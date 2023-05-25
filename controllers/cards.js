@@ -34,7 +34,7 @@ module.exports.createCard = (req, res) => {
 
 module.exports.cardDelete = (req, res) => {
   Card.findByIdAndRemove(req.params.id)
-    .orFail(new Error('cardNotFound'))
+    .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof Error.DocumentNotFoundError) {
@@ -56,7 +56,7 @@ module.exports.likeCard = (req, res) => {
     req.params.id,
     { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
     { new: true },
-  )
+  ).orFail()
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof Error.DocumentNotFoundError) {
@@ -78,7 +78,7 @@ module.exports.dislikeCard = (req, res) => {
     req.params.id,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
     { new: true },
-  )
+  ).orFail()
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof Error.DocumentNotFoundError) {
