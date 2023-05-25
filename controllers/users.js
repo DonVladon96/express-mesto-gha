@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const http2 = require('http2');
 const { Error } = require('mongoose');
 
