@@ -1,5 +1,5 @@
 const NotFoundError = '404 Not Found';
-
+const expression = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
 module.exports = {
-  NotFoundError,
+  NotFoundError, expression,
 };

@@ -1,5 +1,8 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const http2 = require('http2');
 const { Error } = require('mongoose');
+const User = require('../models/user');
 
 const {
   HTTP_STATUS_CREATED,
@@ -7,60 +10,112 @@ const {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
   HTTP_STATUS_OK,
+  HTTP_STATUS_UNAUTHORIZED,
+  HTTP_STATUS_CONFLICT,
 } = http2.constants;
 
-const User = require('../models/user');
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
 
-module.exports.getUsers = (req, res) => {
-  User.find({})
+  return User
+    .findOne({ email })
+    .select('+password')
+    .then((user) => {
+      if (!user) {
+        return next(res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Password or Email is not validity' }));
+      }
+
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return next(res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Password or Email is not validity' }));
+          }
+
+          const token = jwt.sign({ _id: user._id }, 'secret-person-key', { expiresIn: '7d' });
+          res.cookie('jwt', token, { maxAge: 3600000 * 24 * 7, httpOnly: true, sameSite: true });
+
+          return res.status(HTTP_STATUS_OK).send({ token });
+        });
+    })
+    .catch(next);
+};
+
+module.exports.getUsers = (req, res, next) => {
+  console.log('hello vald');
+  User
+    .find({})
     .then((users) => {
       res.send(users);
     })
-    .catch(() => {
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
-    });
+    .catch(next);
 };
 
 // вариант из вебинара Сергея Буртылева
-module.exports.getUserById = (req, res) => {
-  // const { _id } = req.user;
-  const _id = 123456789;
-  User.findById(_id)
+module.exports.getUserById = (req, res, next) => {
+  let userId;
+
+  if (req.params.id) {
+    userId = req.params.id;
+  } else {
+    userId = req.user._id;
+  }
+
+  User
+    .findById(userId)
     .orFail()
     // eslint-disable-next-line consistent-return
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
-      console.log(err);
       if (err instanceof Error.CastError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User id is not valid.' });
-        return;
+        return next(res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User id is not valid.' }));
       }
+
       if (err instanceof Error.DocumentNotFoundError) {
-        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User id is not found.' });
-        return;
+        return next(res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User id is not found.' }));
       }
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error.' });
+
+      return next(res);
     });
 };
 
-//  добавить справки по ошибкам Mongoose ODM
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  console.log(req.body);
-  User.create({ name, about, avatar })
-    .orFail()
-    .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
+module.exports.createUser = (req, res, next) => {
+  const {
+    name,
+    about,
+    avatar,
+    email,
+    password,
+  } = req.body;
+
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }))
+    .then((user) => {
+      const NewUserObj = user.toObject();
+      delete NewUserObj.password;
+      res.status(HTTP_STATUS_CREATED).send(NewUserObj);
+    })
     .catch((err) => {
-      if (err instanceof Error.ValidationError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User data is not a create.' });
-        return;
+      if (err.code === 11000) {
+        return next((res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User data is not valid.' })));
       }
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server error' });
+      if (err instanceof Error.ValidationError || err.code === 11000) {
+        return next((res.status(HTTP_STATUS_CONFLICT).send({ message: 'Such a user is already registered' })));
+      }
+
+      return next(err);
     });
 };
 
 module.exports.updateProfile = (req, res) => {
   const { name, about } = req.body || {};
+
   User.findByIdAndUpdate(
     req.user._id,
     { name, about },
@@ -69,8 +124,7 @@ module.exports.updateProfile = (req, res) => {
       runValidators: true,
     },
   )
-    .orFail()
-    .then((user) => res.status(HTTP_STATUS_OK).send(user))
+    .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof Error.CastError) {
         res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User data is not valid' });
@@ -92,6 +146,7 @@ module.exports.updateAvatar = (req, res) => {
   User.findByIdAndUpdate(
     req.user._id,
     { avatar },
+    { new: true, runValidators: true },
   )
     .orFail()
     .then((user) => res.status(HTTP_STATUS_OK).send(user))

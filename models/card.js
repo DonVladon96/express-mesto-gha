@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { expression } = require('../utils/constants');
 
 const cardSchema = new mongoose.Schema(
   {
@@ -11,6 +12,10 @@ const cardSchema = new mongoose.Schema(
     link: {
       type: String,
       required: [true, 'Поле name обязательно к заполнению.'],
+      validate: {
+        validator: (url) => expression.test(url),
+        message: 'Url is not validity',
+      },
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -19,12 +24,12 @@ const cardSchema = new mongoose.Schema(
     },
     likes: {
       type: [mongoose.Schema.Types.ObjectId],
-      ref: 'user',
       default: [],
     },
     createdAt: {
       type: Date,
-      default: Date.now,
+      default: new Date(),
+      required: true,
     },
   },
 );
