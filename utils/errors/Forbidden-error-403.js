@@ -1,4 +1,4 @@
-const HTTP_STATUS_FORBIDDEN = require('../constants');
+const { HTTP_STATUS_FORBIDDEN } = require('../constants');
 
 class ForbiddenError extends Error {
   constructor(message) {

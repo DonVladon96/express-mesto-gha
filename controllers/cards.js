@@ -36,7 +36,7 @@ module.exports.cardDelete = (req, res, next) => {
     .orFail(new NotFoundError404(`Card Id: ${cardId} is not found`))
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
-        return next(new ForbiddenError('You can`t delete card'));
+        throw (new ForbiddenError('You can`t delete card'));
       }
 
       return card;
