@@ -3,6 +3,12 @@ const jwt = require('jsonwebtoken');
 const http2 = require('http2');
 const { Error } = require('mongoose');
 const User = require('../models/user');
+const {
+  ErrorUnauthorized,
+  NotFoundError404,
+  BadRequestError,
+  ConflictError,
+} = require('../utils/errors');
 
 const {
   HTTP_STATUS_CREATED,
@@ -22,13 +28,13 @@ module.exports.login = (req, res, next) => {
     .select('+password')
     .then((user) => {
       if (!user) {
-        return next(res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Password or Email is not validity' }));
+        return next(new ErrorUnauthorized('Password or Email is not validity'));
       }
 
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            return next(res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Password or Email is not validity' }));
+            return next(new ErrorUnauthorized('Password or Email is not validity'));
           }
 
           const token = jwt.sign({ _id: user._id }, 'secret-person-key', { expiresIn: '7d' });
@@ -66,12 +72,12 @@ module.exports.getUserById = (req, res, next) => {
     // eslint-disable-next-line consistent-return
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
-        return next(res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User id is not valid.' }));
+      if (err.name === 'CastError') {
+        return next(new NotFoundError404('User ID is not found'));
       }
 
-      if (err instanceof Error.DocumentNotFoundError) {
-        return next(res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User id is not found.' }));
+      if (err.name === 'DocumentNotFoundError') {
+        return next(new BadRequestError(`User Id: ${userId} is not found`));
       }
 
       return next(res);
@@ -103,17 +109,18 @@ module.exports.createUser = (req, res, next) => {
     })
     .catch((err) => {
       if (err.code === 11000) {
-        return next((res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User data is not valid.' })));
+        return next(new ConflictError('A user with such an email address has already been registered before'));
       }
-      if (err instanceof Error.ValidationError || err.code === 11000) {
-        return next((res.status(HTTP_STATUS_CONFLICT).send({ message: 'Such a user is already registered' })));
+
+      if (err.name === 'ValidationError') {
+        return next(new NotFoundError404('Create User data is not validity'));
       }
 
       return next(err);
     });
 };
 
-module.exports.updateProfile = (req, res) => {
+module.exports.updateProfile = (req, res, next) => {
   const { name, about } = req.body || {};
 
   User.findByIdAndUpdate(
@@ -126,21 +133,15 @@ module.exports.updateProfile = (req, res) => {
   )
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User data is not valid' });
-        return;
+      if (err.name === 'CastError' || err.name === 'ValidationError') {
+        return next(new NotFoundError404('User id is not validity'));
       }
 
-      if (err instanceof Error.DocumentNotFoundError) {
-        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User id is not a found' });
-        return;
-      }
-
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server error.' });
+      return next(err);
     });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body || {};
 
   User.findByIdAndUpdate(
@@ -148,19 +149,16 @@ module.exports.updateAvatar = (req, res) => {
     { avatar },
     { new: true, runValidators: true },
   )
-    .orFail()
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'User data is not a valid' });
-        return;
+      if (err.name === 'CastError') {
+        return next(new NotFoundError404('User id is not validity'));
       }
 
-      if (err instanceof Error.DocumentNotFoundError) {
-        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User is not a found' });
-        return;
+      if (err.name === 'DocumentNotFoundError') {
+        return next(new BadRequestError(`User Id: ${req.user._id} is not found`));
       }
 
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server error.' });
+      return next(err);
     });
 };
