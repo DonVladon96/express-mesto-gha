@@ -31,7 +31,7 @@ module.exports.login = (req, res, next) => {
             return next(new ErrorUnauthorized('Password or Email is not validity'));
           }
 
-          const token = jwt.sign({ _id: user._id }, 'Jason Statham deffender', { expiresIn: '7d' });
+          const token = jwt.sign({ _id: user._id }, 'secret-person-key', { expiresIn: '7d' });
           res.cookie('jwt', token, { maxAge: 3600000 * 24 * 7, httpOnly: true, sameSite: true });
 
           return res.status(HTTP_STATUS_OK).send({ token });
