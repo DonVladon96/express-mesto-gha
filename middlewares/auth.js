@@ -6,7 +6,7 @@ module.exports.validateToken = (req, res, next) => {
   let payload;
 
   try {
-    payload = jwt.verify(token, 'secret-person-key');
+    payload = jwt.verify(token, 'Jason-Statham-defender');
     console.log(payload);
   } catch (err) {
     return next(new ErrorUnauthorized('Authorization required'));
