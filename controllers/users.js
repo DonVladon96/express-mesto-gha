@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const http2 = require('http2');
-const { Error } = require('mongoose');
 const User = require('../models/user');
 const {
   ErrorUnauthorized,
@@ -12,12 +11,7 @@ const {
 
 const {
   HTTP_STATUS_CREATED,
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_NOT_FOUND,
-  HTTP_STATUS_INTERNAL_SERVER_ERROR,
   HTTP_STATUS_OK,
-  HTTP_STATUS_UNAUTHORIZED,
-  HTTP_STATUS_CONFLICT,
 } = http2.constants;
 
 module.exports.login = (req, res, next) => {
