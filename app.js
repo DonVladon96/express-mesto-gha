@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const { errors } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const router = require('./routes');
+const errorMiddlewares = require('./middlewares/errorMiddlewares');
 
 const app = express();
 const PORT = 3000;
@@ -12,7 +13,7 @@ const PORT = 3000;
 app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
-app.use(errors());
+
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb').then(() => {
   console.log('Connected to database.');
 }).catch((error) => {
@@ -20,7 +21,8 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb').then(() => {
 });
 
 app.use(router);
-
+app.use(errors());
+app.use(errorMiddlewares);
 app.listen(PORT, () => {
   console.log(`Listing on ${PORT}`);
 });

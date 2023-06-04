@@ -67,11 +67,11 @@ module.exports.getUserById = (req, res, next) => {
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
-        return next(new NotFoundError404('User ID is not found'));
+        return next(new BadRequestError('User ID is not found'));
       }
 
       if (err.name === 'DocumentNotFoundError') {
-        return next(new BadRequestError(`User Id: ${userId} is not found`));
+        return next(new NotFoundError404(`User Id: ${userId} is not found`));
       }
 
       return next(res);
@@ -107,7 +107,7 @@ module.exports.createUser = (req, res, next) => {
       }
 
       if (err.name === 'ValidationError') {
-        return next(new NotFoundError404('Create User data is not validity'));
+        return next(new BadRequestError('Create User data is not validity'));
       }
 
       return next(err);
@@ -128,7 +128,7 @@ module.exports.updateProfile = (req, res, next) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'CastError' || err.name === 'ValidationError') {
-        return next(new NotFoundError404('User id is not validity'));
+        return next(new BadRequestError('User id is not validity'));
       }
 
       return next(err);
@@ -142,15 +142,15 @@ module.exports.updateAvatar = (req, res, next) => {
     req.user._id,
     { avatar },
     { new: true, runValidators: true },
-  )
+  ).orFail()
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
-        return next(new NotFoundError404('User id is not validity'));
+        return next(new BadRequestError('User id is not validity'));
       }
 
       if (err.name === 'DocumentNotFoundError') {
-        return next(new BadRequestError(`User Id: ${req.user._id} is not found`));
+        return next(new NotFoundError404(`User Id: ${req.user._id} is not found`));
       }
 
       return next(err);

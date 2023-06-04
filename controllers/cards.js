@@ -23,7 +23,7 @@ module.exports.createCard = (req, res, next) => {
     .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return next(new NotFoundError404('Created card data is not validity!'));
+        return next(new BadRequestError('Created card data is not validity!'));
       }
 
       return next(err);
@@ -33,7 +33,7 @@ module.exports.createCard = (req, res, next) => {
 module.exports.cardDelete = (req, res, next) => {
   const { cardId } = req.params;
   Card.findById(cardId)
-    .orFail(new BadRequestError(`Card Id: ${cardId} is not found`))
+    .orFail(new NotFoundError404(`Card Id: ${cardId} is not found`))
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
         return next(new ForbiddenError('You can`t delete card'));
@@ -54,14 +54,14 @@ module.exports.likeCard = (req, res, next) => {
   )
     .then((card) => {
       if (!card) {
-        return next(new BadRequestError(`Card Id: ${req.params.cardId} is not founded`));
+        return next(new NotFoundError404(`Card Id: ${req.params.cardId} is not founded`));
       }
 
       return res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return next(new NotFoundError404('Like data is not founded'));
+        return next(new BadRequestError('Like data is not founded'));
       }
 
       return next(err);
@@ -76,7 +76,7 @@ module.exports.dislikeCard = (req, res, next) => {
   )
     .then((card) => {
       if (!card) {
-        return next(new BadRequestError(`Card Id: ${req.params.cardId} is not found`));
+        return next(new NotFoundError404(`Card Id: ${req.params.cardId} is not found`));
       }
 
       return res.status(HTTP_STATUS_OK)
@@ -84,7 +84,7 @@ module.exports.dislikeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError' || err.name === 'ValidationError') {
-        return next(new NotFoundError404('Like data is not founded'));
+        return next(new BadRequestError('Like data is not founded'));
       }
 
       return next(err);
